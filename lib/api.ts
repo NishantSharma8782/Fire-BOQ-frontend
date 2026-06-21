@@ -74,8 +74,16 @@ export const analysisApi = {
 
 // ── BOQ ───────────────────────────────────────────────────────────────────────
 export const boqApi = {
-  generate: (projectId: string): Promise<BOQGenerateResponse> =>
-    api.post(`/boq/${projectId}/generate`).then((r) => r.data),
+  generate: (
+    projectId: string,
+    params: { standard?: string; boq_type?: string; ai_model?: string } = {}
+  ): Promise<BOQGenerateResponse> =>
+    api.post(`/boq/${projectId}/generate`, {
+      standard: params.standard || "NBC",
+      boq_type: params.boq_type || "manual",
+      // ai_model is optional — if omitted, backend uses the project's saved ai_model
+      ...(params.ai_model ? { ai_model: params.ai_model } : {}),
+    }).then((r) => r.data),
 
   get: (projectId: string): Promise<BOQReport> =>
     api.get(`/boq/${projectId}`).then((r) => r.data),
@@ -85,6 +93,14 @@ export const boqApi = {
 export const chatApi = {
   send: (projectId: string, message: string, history: ChatMessage[]): Promise<ChatResponse> =>
     api.post("/chat/", { project_id: projectId, message, history }).then((r) => r.data),
+
+  getHistory: (projectId: string, page = 1, pageSize = 30): Promise<{
+    messages: ChatMessage[];
+    total: number;
+    total_pages: number;
+    page: number;
+  }> =>
+    api.get(`/chat/${projectId}/history`, { params: { page, page_size: pageSize } }).then((r) => r.data),
 };
 
 // ── Export ────────────────────────────────────────────────────────────────────

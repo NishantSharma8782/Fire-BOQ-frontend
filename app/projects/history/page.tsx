@@ -22,6 +22,13 @@ import {
   HAZARD_COLORS,
 } from "@/lib/utils";
 
+const AI_BADGES: Record<string, { icon: string; label: string; color: string }> = {
+  gemini: { icon: "✨", label: "Gemini", color: "#3b82f6" },
+  openai: { icon: "🤖", label: "GPT-4o", color: "#10b981" },
+  groq:   { icon: "⚡", label: "Groq",   color: "#f59e0b" },
+  claude: { icon: "🔮", label: "Claude", color: "#8b5cf6" },
+};
+
 export default function ProjectHistoryPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -120,7 +127,7 @@ export default function ProjectHistoryPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                  {["Project ID", "Name", "Client", "Building Type", "Hazard", "Status", "Created", ""].map(h => (
+                  {["Project ID", "Name", "Client", "Building Type", "Hazard", "AI Model", "Status", "Created", ""].map(h => (
                     <th key={h} style={{
                       padding: "12px 16px",
                       textAlign: "left",
@@ -165,6 +172,22 @@ export default function ProjectHistoryPage() {
                         className={HAZARD_COLORS[project.hazard_category]}>
                         {HAZARD_LABELS[project.hazard_category]}
                       </span>
+                    </td>
+                    {/* AI Model */}
+                    <td style={{ padding: "14px 16px" }}>
+                      {(() => {
+                        const m = AI_BADGES[project.ai_model || "gemini"] || AI_BADGES.gemini;
+                        return (
+                          <span style={{
+                            fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
+                            padding: "3px 9px", borderRadius: 20,
+                            background: `${m.color}15`, border: `1px solid ${m.color}35`,
+                            color: m.color, display: "inline-flex", alignItems: "center", gap: 4,
+                          }}>
+                            {m.icon} {m.label}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td style={{ padding: "14px 16px" }}>
                       <span className={`status-badge ${STATUS_COLORS[project.status]}`}>

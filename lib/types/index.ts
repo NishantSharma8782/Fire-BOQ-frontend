@@ -17,12 +17,17 @@ export type ProjectStatus =
   | "analyzed"
   | "boq_generated";
 
+export type AIModel = "gemini" | "openai" | "groq" | "claude";
+export type FireStandard = "NBC" | "NFPA";
+
 export interface ProjectCreate {
   project_name: string;
   client_name: string;
   location: string;
   building_type: BuildingType;
   hazard_category: HazardCategory;
+  ai_model: AIModel;
+  fire_standard: FireStandard;
   remarks?: string;
 }
 
@@ -42,6 +47,8 @@ export interface ProjectSummary {
   location: string;
   building_type: BuildingType;
   hazard_category: HazardCategory;
+  ai_model: AIModel;
+  fire_standard: FireStandard;
   status: ProjectStatus;
   created_at: string;
   drawing_count: number;
@@ -118,7 +125,7 @@ export interface Analysis {
   recommendations: FireRecommendations;
   layout_data: LayoutData;
   raw_analysis?: string;
-  data_source?: "ai" | "manual";
+  data_source?: string;
   created_at: string;
 }
 
@@ -160,6 +167,9 @@ export interface BOQReport {
   total_items: number;
   generated_at: string;
   notes?: string;
+  standard?: string;       // "NBC" | "NFPA"
+  boq_type?: string;       // "manual" | "ai" | "ai_fallback"
+  ai_model?: string;       // "gemini" | "openai" | "grok"
 }
 
 // ── Chat Types ─────────────────────────────────────────────────────────────────

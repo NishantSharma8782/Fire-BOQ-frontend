@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -19,6 +19,13 @@ import {
   Clock,
   Building2,
   AlertTriangle,
+  ChevronRight,
+  ChevronLeft,
+  BookOpen,
+  Cpu,
+  Calculator,
+  X,
+  Sparkles,
 } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import DrawingUpload from "@/components/drawings/DrawingUpload";
@@ -45,11 +52,233 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "chat", label: "AI Assistant", icon: MessageSquare },
 ];
 
+// BOQ Generate Modal State
+interface BOQModalState {
+  open: boolean;
+  boqType: "manual" | "ai";
+}
+
+// ── Overlay backdrop ──────────────────────────────────────────────────────────
+function Overlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 24,
+        animation: "fadeIn 0.2s ease",
+      }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {children}
+    </div>
+  );
+}
+
+const AI_MODEL_META: Record<string, { icon: string; label: string; color: string }> = {
+  gemini: { icon: "✨", label: "Gemini 2.0 Flash", color: "#3b82f6" },
+  openai: { icon: "🤖", label: "GPT-4o", color: "#10b981" },
+  groq:   { icon: "⚡", label: "Groq LLaMA-3.3", color: "#f59e0b" },
+  claude: { icon: "🔮", label: "Claude 3.5 Sonnet", color: "#8b5cf6" },
+};
+
+function BOQGenerateModal({
+  state,
+  setState,
+  onConfirm,
+  isGenerating,
+  projectAiModel,
+  projectFireStandard,
+}: {
+  state: BOQModalState;
+  setState: React.Dispatch<React.SetStateAction<BOQModalState>>;
+  onConfirm: () => void;
+  isGenerating: boolean;
+  projectAiModel: string;
+  projectFireStandard: string;
+}) {
+  const close = () => setState(s => ({ ...s, open: false }));
+  const meta = AI_MODEL_META[projectAiModel] || AI_MODEL_META.gemini;
+
+  const isNBC = projectFireStandard === "NBC";
+  const stdColor = isNBC ? "#ef4444" : "#f59e0b";
+  const stdFlag  = isNBC ? "🇮🇳" : "🇺🇸";
+  const stdLabel = isNBC ? "NBC 2016" : "NFPA 72/13";
+
+  const cardBase: React.CSSProperties = {
+    borderRadius: 14, padding: "18px 20px", cursor: "pointer",
+    transition: "all 0.2s", border: "2px solid",
+    textAlign: "left",
+  };
+
+  return (
+    <Overlay onClose={close}>
+      <div style={{
+        background: "var(--bg-card, #1a1a2e)", borderRadius: 20,
+        border: "1px solid var(--border)", boxShadow: "0 40px 80px rgba(0,0,0,0.6)",
+        width: "100%", maxWidth: 520, padding: 32,
+        animation: "slideUp 0.25s ease",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <div style={{
+            width: 42, height: 42, borderRadius: 12, flexShrink: 0,
+            background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <FileSpreadsheet size={22} color="#ef4444" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)" }}>Generate BOQ</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Choose how the BOQ should be generated</div>
+          </div>
+          <button onClick={close} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4 }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Project settings info strip */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22,
+        }}>
+          {/* Standard badge — locked from project */}
+          <div style={{
+            padding: "10px 14px", borderRadius: 10,
+            background: `${stdColor}08`, border: `1px solid ${stdColor}30`,
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <span style={{ fontSize: 20 }}>{stdFlag}</span>
+            <div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Standard</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: stdColor }}>{stdLabel}</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Set in project settings</div>
+            </div>
+            <CheckCircle2 size={14} color={stdColor} style={{ marginLeft: "auto", flexShrink: 0 }} />
+          </div>
+          {/* AI model badge */}
+          <div style={{
+            padding: "10px 14px", borderRadius: 10,
+            background: `${meta.color}08`, border: `1px solid ${meta.color}30`,
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <span style={{ fontSize: 20 }}>{meta.icon}</span>
+            <div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>AI Model</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: meta.color }}>{meta.label}</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Set in project settings</div>
+            </div>
+            <CheckCircle2 size={14} color={meta.color} style={{ marginLeft: "auto", flexShrink: 0 }} />
+          </div>
+        </div>
+
+        {/* BOQ Type Selection */}
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
+          How should the BOQ be generated?
+        </div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16 }}>
+          Manual uses deterministic {stdLabel} formulas. AI uses <strong style={{ color: meta.color }}>{meta.label}</strong> for intelligent generation.
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {/* Manual */}
+          <button
+            onClick={() => setState(s => ({ ...s, boqType: "manual" }))}
+            style={{
+              ...cardBase,
+              borderColor: state.boqType === "manual" ? "#10b981" : "var(--border)",
+              background: state.boqType === "manual" ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.02)",
+            }}
+          >
+            <div style={{
+              width: 40, height: 40, borderRadius: 10, marginBottom: 10,
+              background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Calculator size={20} color="#10b981" />
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: state.boqType === "manual" ? "#10b981" : "var(--text-primary)", marginBottom: 4 }}>
+              Manual Calculation
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>
+              Deterministic {stdLabel} formulas. Fast, reliable, fully traceable.
+            </div>
+            {state.boqType === "manual" && (
+              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                <CheckCircle2 size={13} color="#10b981" />
+                <span style={{ fontSize: 11, color: "#10b981", fontWeight: 600 }}>Selected</span>
+              </div>
+            )}
+          </button>
+
+          {/* AI */}
+          <button
+            onClick={() => setState(s => ({ ...s, boqType: "ai" }))}
+            style={{
+              ...cardBase,
+              borderColor: state.boqType === "ai" ? meta.color : "var(--border)",
+              background: state.boqType === "ai" ? `${meta.color}0f` : "rgba(255,255,255,0.02)",
+            }}
+          >
+            <div style={{
+              width: 40, height: 40, borderRadius: 10, marginBottom: 10,
+              background: `${meta.color}15`, border: `1px solid ${meta.color}30`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 22,
+            }}>
+              {meta.icon}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: state.boqType === "ai" ? meta.color : "var(--text-primary)", marginBottom: 4 }}>
+              AI Generated
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>
+              {meta.label} generates the BOQ using project dimensions and {stdLabel} rules.
+            </div>
+            {state.boqType === "ai" && (
+              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                <CheckCircle2 size={13} color={meta.color} />
+                <span style={{ fontSize: 11, color: meta.color, fontWeight: 600 }}>Selected</span>
+              </div>
+            )}
+          </button>
+        </div>
+
+        {state.boqType === "ai" && (
+          <div style={{
+            marginTop: 12, padding: "8px 14px", borderRadius: 10,
+            background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)",
+            fontSize: 11, color: "var(--text-muted)", lineHeight: 1.6,
+          }}>
+            💡 If {meta.label} fails (API key missing or quota exceeded), the system automatically falls back to manual calculation.
+          </div>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 22 }}>
+          <button
+            className="btn-primary"
+            onClick={onConfirm}
+            disabled={isGenerating}
+            style={{ padding: "10px 28px" }}
+          >
+            {state.boqType === "ai" ? <><span>{meta.icon}</span> {isGenerating ? "Generating..." : "Generate AI BOQ"}</> : (isGenerating ? "Generating..." : "Generate BOQ")}
+          </button>
+        </div>
+      </div>
+    </Overlay>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────────
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [boqModal, setBoqModal] = useState<BOQModalState>({
+    open: false,
+    boqType: "manual",
+  });
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", id],
@@ -85,7 +314,6 @@ export default function ProjectPage() {
         qc.invalidateQueries({ queryKey: ["projects"] });
         setActiveTab("analysis");
       }
-      // If success=false, the error is shown in AnalysisPanel — no toast spam
     },
     onError: () => toast.error("Analysis request failed. Please check your connection."),
   });
@@ -102,7 +330,6 @@ export default function ProjectPage() {
     onError: () => toast.error("Failed to save manual measurements. Please try again."),
   });
 
-  // Extract AI error details to pass to AnalysisPanel
   const analyzeResult = analyzeMutation.data;
   const analyzeError =
     analyzeResult && !analyzeResult.success
@@ -110,12 +337,14 @@ export default function ProjectPage() {
       : null;
 
   const boqMutation = useMutation({
-    mutationFn: () => boqApi.generate(id),
+    mutationFn: (params: { standard?: string; boq_type?: string; ai_model?: string }) =>
+      boqApi.generate(id, params),
     onSuccess: () => {
       toast.success("BOQ generated successfully!");
       qc.invalidateQueries({ queryKey: ["boq", id] });
       qc.invalidateQueries({ queryKey: ["project", id] });
       qc.invalidateQueries({ queryKey: ["projects"] });
+      setBoqModal(s => ({ ...s, open: false }));
       setActiveTab("boq");
     },
     onError: () => toast.error("BOQ generation failed. Run AI analysis first."),
@@ -129,6 +358,67 @@ export default function ProjectPage() {
       router.push("/projects/history");
     },
   });
+
+  // ── Tab next/back logic ────────────────────────────────────────────────────
+  const hasDrawings = (drawings?.length || 0) > 0;
+  const hasAnalysis = !!analysis;
+  const hasBOQ = !!boq;
+
+  const TAB_ORDER: Tab[] = ["overview", "drawings", "analysis", "layout", "boq", "chat"];
+
+  function isNextEnabled(tab: Tab): boolean {
+    switch (tab) {
+      case "overview": return true;
+      case "drawings": return true;   // drawing is optional
+      case "analysis": return hasAnalysis;
+      case "layout": return hasAnalysis;
+      case "boq": return hasBOQ;
+      case "chat": return false;
+    }
+  }
+
+  function getNextLabel(tab: Tab): string {
+    switch (tab) {
+      case "overview": return "Go to Drawings";
+      case "drawings": return "Go to Analysis";
+      case "analysis": return "View Layout";
+      case "layout": return "View BOQ";
+      case "boq": return "Open AI Assistant";
+      default: return "Next";
+    }
+  }
+
+  function getNextHint(tab: Tab): string {
+    if (isNextEnabled(tab)) return "";
+    switch (tab) {
+      case "analysis": return "Complete AI analysis or enter measurements manually first";
+      case "layout": return "Complete analysis first to generate layout";
+      case "boq": return "Generate BOQ first";
+      default: return "";
+    }
+  }
+
+  const handleNext = useCallback(() => {
+    const idx = TAB_ORDER.indexOf(activeTab);
+    if (idx < TAB_ORDER.length - 1) setActiveTab(TAB_ORDER[idx + 1]);
+  }, [activeTab]);
+
+  const handleBack = useCallback(() => {
+    const idx = TAB_ORDER.indexOf(activeTab);
+    if (idx > 0) setActiveTab(TAB_ORDER[idx - 1]);
+  }, [activeTab]);
+
+  const openBOQModal = () => {
+    setBoqModal({ open: true, boqType: "manual" });
+  };
+
+  const handleBOQConfirm = () => {
+    boqMutation.mutate({
+      standard: project?.fire_standard || "NBC",
+      boq_type: boqModal.boqType,
+      ai_model: project?.ai_model || "gemini",
+    });
+  };
 
   if (projectLoading) {
     return (
@@ -154,8 +444,30 @@ export default function ProjectPage() {
     );
   }
 
+  const currentTabIdx = TAB_ORDER.indexOf(activeTab);
+  const isLastTab = activeTab === "chat";
+  const isFirstTab = activeTab === "overview";
+
   return (
     <AppLayout>
+      {/* BOQ Modal */}
+      {boqModal.open && (
+        <BOQGenerateModal
+          state={boqModal}
+          setState={setBoqModal}
+          onConfirm={handleBOQConfirm}
+          isGenerating={boqMutation.isPending}
+          projectAiModel={project?.ai_model || "gemini"}
+          projectFireStandard={project?.fire_standard || "NBC"}
+        />
+      )}
+
+      {/* Keyframe animations */}
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
+      `}</style>
+
       <div style={{ padding: "28px 36px" }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
@@ -172,7 +484,7 @@ export default function ProjectPage() {
                   {STATUS_LABELS[project.status]}
                 </span>
               </div>
-              <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
                 <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 12, color: "#ef4444", fontWeight: 600 }}>
                   {project.project_id}
                 </span>
@@ -184,6 +496,21 @@ export default function ProjectPage() {
                 <span style={{ fontSize: 12, fontWeight: 600 }} className={HAZARD_COLORS[project.hazard_category]}>
                   {HAZARD_LABELS[project.hazard_category]}
                 </span>
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>•</span>
+                {/* AI Model badge */}
+                {(() => {
+                  const m = AI_MODEL_META[project.ai_model || "gemini"] || AI_MODEL_META.gemini;
+                  return (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700,
+                      padding: "2px 8px", borderRadius: 20,
+                      background: `${m.color}15`, border: `1px solid ${m.color}35`,
+                      color: m.color, display: "inline-flex", alignItems: "center", gap: 4,
+                    }}>
+                      {m.icon} {m.label}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
 
@@ -192,17 +519,17 @@ export default function ProjectPage() {
               <button
                 className="btn-secondary"
                 onClick={() => analyzeMutation.mutate()}
-                disabled={analyzeMutation.isPending || !drawings?.length}
-                title={!drawings?.length ? "Upload a drawing first" : ""}
+                disabled={analyzeMutation.isPending || !hasDrawings}
+                title={!hasDrawings ? "Upload a drawing first" : ""}
               >
                 <Zap size={15} />
                 {analyzeMutation.isPending ? "Analyzing..." : "Analyze Drawing"}
               </button>
               <button
                 className="btn-secondary"
-                onClick={() => boqMutation.mutate()}
-                disabled={boqMutation.isPending || !analysis}
-                title={!analysis ? "Run analysis first" : ""}
+                onClick={openBOQModal}
+                disabled={boqMutation.isPending || !hasAnalysis}
+                title={!hasAnalysis ? "Run analysis first" : ""}
               >
                 <FileSpreadsheet size={15} />
                 {boqMutation.isPending ? "Generating..." : "Generate BOQ"}
@@ -226,32 +553,32 @@ export default function ProjectPage() {
         <div className="glass-card" style={{ padding: "14px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 0 }}>
           {[
             { label: "Project Created", done: true },
-            { label: "Drawing Uploaded", done: (drawings?.length || 0) > 0 },
-            { label: "AI Analysis", done: !!analysis },
-            { label: "Layout Generated", done: !!analysis },
-            { label: "BOQ Generated", done: !!boq },
-            { label: "Ready to Export", done: !!boq },
+            { label: "Drawing Uploaded", done: hasDrawings, optional: true },
+            { label: "AI Analysis", done: hasAnalysis },
+            { label: "Layout Generated", done: hasAnalysis },
+            { label: "BOQ Generated", done: hasBOQ },
+            { label: "Ready to Export", done: hasBOQ },
           ].map((step, i, arr) => (
             <div key={step.label} style={{ display: "flex", alignItems: "center", flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{
                   width: 22, height: 22, borderRadius: "50%",
-                  background: step.done ? "linear-gradient(135deg, #10b981, #059669)" : "rgba(255,255,255,0.08)",
-                  border: step.done ? "none" : "1px solid var(--border)",
+                  background: step.done ? "linear-gradient(135deg, #10b981, #059669)" : step.optional ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.08)",
+                  border: step.done ? "none" : step.optional ? "1px dashed rgba(245,158,11,0.5)" : "1px solid var(--border)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                 }}>
                   {step.done
                     ? <CheckCircle2 size={13} color="white" />
-                    : <Clock size={11} color="var(--text-muted)" />
+                    : <Clock size={11} color={step.optional ? "#f59e0b" : "var(--text-muted)"} />
                   }
                 </div>
                 <span style={{
                   fontSize: 11, fontWeight: step.done ? 600 : 400,
-                  color: step.done ? "var(--text-primary)" : "var(--text-muted)",
+                  color: step.done ? "var(--text-primary)" : step.optional ? "#f59e0b" : "var(--text-muted)",
                   whiteSpace: "nowrap"
                 }}>
-                  {step.label}
+                  {step.label}{step.optional && !step.done ? " (optional)" : ""}
                 </span>
               </div>
               {i < arr.length - 1 && (
@@ -371,18 +698,25 @@ export default function ProjectPage() {
                 )}
                 {!analysis && (
                   <div className="glass-card" style={{ padding: 24, textAlign: "center", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
-                    <Zap size={36} color="var(--text-muted)" />
+                    <Zap size={36} color="var(--text-muted)" style={{ marginBottom: 4 }} />
                     <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-secondary)" }}>
                       No Analysis Yet
                     </div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                      Upload a drawing and run AI analysis to see building insights here
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", maxWidth: 240 }}>
+                      Upload a drawing for AI extraction, or go directly to Analysis and enter measurements manually.
                     </div>
-                    <button className="btn-primary"
-                      onClick={() => setActiveTab("drawings")}
-                      style={{ padding: "8px 16px", fontSize: 13 }}>
-                      <Upload size={14} /> Upload Drawing
-                    </button>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                      <button className="btn-secondary"
+                        onClick={() => setActiveTab("drawings")}
+                        style={{ padding: "8px 14px", fontSize: 12 }}>
+                        <Upload size={13} /> Upload Drawing
+                      </button>
+                      <button className="btn-primary"
+                        onClick={() => setActiveTab("analysis")}
+                        style={{ padding: "8px 14px", fontSize: 12 }}>
+                        <Zap size={13} /> Go to Analysis
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -400,8 +734,9 @@ export default function ProjectPage() {
               onAnalyze={() => analyzeMutation.mutate()}
               onManualSubmit={(data) => manualMutation.mutate(data)}
               isManualSubmitting={manualMutation.isPending}
-              hasDrawings={(drawings?.length || 0) > 0}
+              hasDrawings={hasDrawings}
               analyzeError={analyzeError}
+              aiModel={project?.ai_model || "gemini"}
             />
           )}
 
@@ -422,11 +757,81 @@ export default function ProjectPage() {
           )}
 
           {activeTab === "boq" && (
-            <BOQTable boq={boq} onGenerate={() => boqMutation.mutate()} isGenerating={boqMutation.isPending} hasAnalysis={!!analysis} />
+            <BOQTable
+              boq={boq}
+              onGenerate={openBOQModal}
+              isGenerating={boqMutation.isPending}
+              hasAnalysis={hasAnalysis}
+            />
           )}
 
           {activeTab === "chat" && (
             <AIAssistant projectId={id} />
+          )}
+        </div>
+
+        {/* ── Next / Back Navigation Bar ──────────────────────────────────────── */}
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          marginTop: 28, paddingTop: 20, borderTop: "1px solid var(--border)",
+        }}>
+          {/* Back button */}
+          {!isFirstTab ? (
+            <button
+              className="btn-secondary"
+              onClick={handleBack}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px" }}
+            >
+              <ChevronLeft size={16} />
+              Back: {TABS[currentTabIdx - 1]?.label}
+            </button>
+          ) : (
+            <div />
+          )}
+
+          {/* Step indicator */}
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            {TABS.map((tab, i) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  width: currentTabIdx === i ? 24 : 8,
+                  height: 8, borderRadius: 999,
+                  background: currentTabIdx === i ? "#ef4444" : "rgba(255,255,255,0.15)",
+                  border: "none", cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  padding: 0,
+                }}
+                title={tab.label}
+              />
+            ))}
+          </div>
+
+          {/* Next button */}
+          {!isLastTab ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+              <button
+                className="btn-primary"
+                onClick={handleNext}
+                disabled={!isNextEnabled(activeTab)}
+                title={getNextHint(activeTab)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "10px 20px",
+                  opacity: isNextEnabled(activeTab) ? 1 : 0.45,
+                }}
+              >
+                {getNextLabel(activeTab)}
+                <ChevronRight size={16} />
+              </button>
+              {!isNextEnabled(activeTab) && (
+                <span style={{ fontSize: 11, color: "var(--text-muted)", maxWidth: 200, textAlign: "right" }}>
+                  {getNextHint(activeTab)}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div />
           )}
         </div>
       </div>

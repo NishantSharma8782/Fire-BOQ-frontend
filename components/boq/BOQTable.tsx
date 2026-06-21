@@ -1,6 +1,6 @@
 "use client";
 
-import { FileSpreadsheet, AlertCircle, Download } from "lucide-react";
+import { FileSpreadsheet, AlertCircle, Cpu, Calculator, BookOpen } from "lucide-react";
 import type { BOQReport } from "@/lib/types";
 
 interface Props {
@@ -14,6 +14,31 @@ const SECTION_COLORS: Record<string, { bg: string; text: string; border: string 
   A: { bg: "rgba(239,68,68,0.1)", text: "#f87171", border: "rgba(239,68,68,0.3)" },
   B: { bg: "rgba(59,130,246,0.1)", text: "#60a5fa", border: "rgba(59,130,246,0.3)" },
   C: { bg: "rgba(16,185,129,0.1)", text: "#34d399", border: "rgba(16,185,129,0.3)" },
+};
+
+const MODEL_LABELS: Record<string, string> = {
+  gemini: "Gemini 2.0 Flash",
+  openai: "GPT-4o",
+  groq:   "Groq LLaMA-3.3",
+  claude: "Claude 3.5 Sonnet",
+  "ai_fallback": "Fallback",
+  "": "",
+};
+
+const MODEL_COLORS: Record<string, string> = {
+  gemini: "#3b82f6",
+  openai: "#10b981",
+  groq:   "#f59e0b",
+  claude: "#8b5cf6",
+  "": "#6b7280",
+};
+
+const MODEL_ICONS: Record<string, string> = {
+  gemini: "✨",
+  openai: "🤖",
+  groq:   "⚡",
+  claude: "🔮",
+  "": "",
 };
 
 export default function BOQTable({ boq, onGenerate, isGenerating, hasAnalysis }: Props) {
@@ -62,6 +87,14 @@ export default function BOQTable({ boq, onGenerate, isGenerating, hasAnalysis }:
     );
   }
 
+  const isAI = boq.boq_type === "ai";
+  const isFallback = boq.boq_type === "ai_fallback";
+  const standard = boq.standard || "NBC";
+  const aiModel = boq.ai_model || "";
+  const modelLabel = MODEL_LABELS[aiModel] || aiModel;
+  const modelColor = MODEL_COLORS[aiModel] || "#6b7280";
+  const modelIcon = MODEL_ICONS[aiModel] || "🤖";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* BOQ Header */}
@@ -70,12 +103,67 @@ export default function BOQTable({ boq, onGenerate, isGenerating, hasAnalysis }:
         background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)"
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#34d399" }}>BOQ Generated</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-              {boq.sections.length} sections • {boq.total_items} items total
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#34d399", marginBottom: 4 }}>
+                ✅ BOQ Generated
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                {boq.sections.length} sections • {boq.total_items} items total
+              </div>
             </div>
+
+            {/* Standard badge */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "4px 10px", borderRadius: 20,
+              background: standard === "NFPA" ? "rgba(245,158,11,0.12)" : "rgba(239,68,68,0.1)",
+              border: `1px solid ${standard === "NFPA" ? "rgba(245,158,11,0.35)" : "rgba(239,68,68,0.3)"}`,
+            }}>
+              <BookOpen size={11} color={standard === "NFPA" ? "#f59e0b" : "#ef4444"} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: standard === "NFPA" ? "#f59e0b" : "#ef4444" }}>
+                {standard === "NFPA" ? "NFPA 72/13/14" : "NBC 2016 / IS"}
+              </span>
+            </div>
+
+            {/* BOQ type badge */}
+            {isAI && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "4px 10px", borderRadius: 20,
+                background: `${modelColor}15`,
+                border: `1px solid ${modelColor}40`,
+              }}>
+                <span style={{ fontSize: 13 }}>{modelIcon}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: modelColor }}>
+                  AI • {modelLabel}
+                </span>
+              </div>
+            )}
+            {!isAI && !isFallback && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "4px 10px", borderRadius: 20,
+                background: "rgba(107,114,128,0.1)",
+                border: "1px solid rgba(107,114,128,0.3)",
+              }}>
+                <Calculator size={11} color="#9ca3af" />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af" }}>Manual Calc</span>
+              </div>
+            )}
+            {isFallback && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "4px 10px", borderRadius: 20,
+                background: "rgba(245,158,11,0.1)",
+                border: "1px solid rgba(245,158,11,0.3)",
+              }}>
+                <AlertCircle size={11} color="#f59e0b" />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b" }}>AI Fallback</span>
+              </div>
+            )}
           </div>
+
           <button className="btn-secondary" style={{ padding: "8px 16px", fontSize: 12 }} onClick={onGenerate}>
             Regenerate BOQ
           </button>
@@ -124,7 +212,7 @@ export default function BOQTable({ boq, onGenerate, isGenerating, hasAnalysis }:
                   </tr>
                 </thead>
                 <tbody>
-                  {section.items.map((item, i) => (
+                  {section.items.map((item) => (
                     <tr key={item.sno}>
                       <td style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>
                         {item.sno}

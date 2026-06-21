@@ -16,6 +16,18 @@ import {
 } from "lucide-react";
 import type { Analysis, ManualBuildingData } from "@/lib/types";
 
+// ── AI Model Meta ────────────────────────────────────────────────────────────
+const AI_MODEL_META: Record<string, { icon: string; label: string; visionLabel: string }> = {
+  gemini: { icon: "✨", label: "Gemini 2.0 Flash",    visionLabel: "Gemini Vision AI" },
+  openai: { icon: "🤖", label: "GPT-4o",              visionLabel: "GPT-4o Vision" },
+  groq:   { icon: "⚡", label: "Groq LLaMA-3.3",      visionLabel: "Groq LLaMA-3.3 (estimated)" },
+  claude: { icon: "🔮", label: "Claude 3.5 Sonnet",   visionLabel: "Claude Vision" },
+};
+
+function getModelMeta(aiModel?: string) {
+  return AI_MODEL_META[aiModel?.toLowerCase() || "gemini"] || AI_MODEL_META.gemini;
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────────
 const ITEM_COLORS: Record<string, string> = {
   smoke_detectors: "#3b82f6",
@@ -61,20 +73,163 @@ const ERROR_CODE_LABELS: Record<string, string> = {
   UNKNOWN_ERROR: "AI Analysis Failed",
 };
 
-// ── Default manual form values ─────────────────────────────────────────────────
-const DEFAULT_MANUAL: ManualBuildingData = {
+// ── String-based form state (empty fields, no default 0 shown) ─────────────────
+interface ManualFormState {
+  building_type: string;
+  estimated_area: string;
+  rooms: string;
+  floors: string;
+  corridors: string;
+  stairs: string;
+  entrances: string;
+  exits: string;
+  open_areas: string;
+  ceiling_height: string;
+  description: string;
+}
+
+const DEFAULT_FORM: ManualFormState = {
   building_type: "office",
-  estimated_area: 0,
-  rooms: 0,
-  floors: 1,
-  corridors: 0,
-  stairs: 1,
-  entrances: 1,
-  exits: 1,
-  open_areas: 0,
-  ceiling_height: 3.0,
+  estimated_area: "",
+  rooms: "",
+  floors: "",
+  corridors: "",
+  stairs: "",
+  entrances: "",
+  exits: "",
+  open_areas: "",
+  ceiling_height: "",
   description: "",
 };
+
+function parseFormToData(f: ManualFormState): ManualBuildingData {
+  return {
+    building_type: f.building_type,
+    estimated_area: parseFloat(f.estimated_area) || 0,
+    rooms: parseInt(f.rooms) || 0,
+    floors: parseInt(f.floors) || 1,
+    corridors: parseInt(f.corridors) || 0,
+    stairs: parseInt(f.stairs) || 0,
+    entrances: parseInt(f.entrances) || 0,
+    exits: parseInt(f.exits) || 0,
+    open_areas: parseInt(f.open_areas) || 0,
+    ceiling_height: parseFloat(f.ceiling_height) || 3.0,
+    description: f.description,
+  };
+}
+
+function dataToForm(d: Partial<ManualBuildingData>): ManualFormState {
+  return {
+    building_type: d.building_type || "office",
+    estimated_area: d.estimated_area ? String(d.estimated_area) : "",
+    rooms: d.rooms != null ? String(d.rooms) : "",
+    floors: d.floors ? String(d.floors) : "",
+    corridors: d.corridors != null ? String(d.corridors) : "",
+    stairs: d.stairs != null ? String(d.stairs) : "",
+    entrances: d.entrances != null ? String(d.entrances) : "",
+    exits: d.exits != null ? String(d.exits) : "",
+    open_areas: d.open_areas != null ? String(d.open_areas) : "",
+    ceiling_height: d.ceiling_height ? String(d.ceiling_height) : "",
+    description: d.description || "",
+  };
+}
+
+// ── Shared styles (defined at module level to avoid re-creation) ───────────────
+const LABEL_STYLE: React.CSSProperties = {
+  fontSize: 12,
+  color: "var(--text-muted)",
+  fontWeight: 600,
+  marginBottom: 5,
+  display: "block",
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+};
+
+function getInputStyle(hasError?: boolean): React.CSSProperties {
+  return {
+    width: "100%",
+    background: "rgba(255,255,255,0.05)",
+    border: `1px solid ${hasError ? "#ef4444" : "var(--border)"}`,
+    borderRadius: 8,
+    padding: "9px 12px",
+    color: "var(--text-primary)",
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s",
+  };
+}
+
+// ── Field component ───────────────────────────────────────────────────────────────
+interface FieldProps {
+  label: string;
+  field: keyof ManualFormState;
+  form: ManualFormState;
+  formErrors: Record<string, string>;
+  onFormChange: (field: keyof ManualFormState, value: string) => void;
+  allowDecimal?: boolean;  // true for ceiling_height and estimated_area
+  required?: boolean;
+  placeholder?: string;
+  hint?: string;
+}
+
+function FormField({
+  label,
+  field,
+  form,
+  formErrors,
+  onFormChange,
+  allowDecimal = false,
+  required,
+  placeholder,
+  hint,
+}: FieldProps) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow: backspace, delete, tab, escape, enter, arrow keys, home, end
+    const allowed = ["Backspace", "Delete", "Tab", "Escape", "Enter", "ArrowLeft", "ArrowRight", "Home", "End"];
+    if (allowed.includes(e.key)) return;
+    // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    if ((e.ctrlKey || e.metaKey) && ["a", "c", "v", "x"].includes(e.key.toLowerCase())) return;
+    // Allow decimal point only for decimal fields
+    if (allowDecimal && e.key === ".") {
+      // Only allow one decimal point
+      if ((form[field] as string).includes(".")) e.preventDefault();
+      return;
+    }
+    // Block anything not a digit
+    if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <label style={LABEL_STYLE}>
+        {label} {required && <span style={{ color: "#ef4444" }}>*</span>}
+      </label>
+      <input
+        type="text"
+        inputMode={allowDecimal ? "decimal" : "numeric"}
+        pattern={allowDecimal ? "[0-9.]*" : "[0-9]*"}
+        value={form[field] as string}
+        placeholder={placeholder || ""}
+        onChange={(e) => {
+          // Strip non-numeric characters on paste
+          let val = e.target.value;
+          val = allowDecimal ? val.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1") : val.replace(/[^0-9]/g, "");
+          onFormChange(field, val);
+        }}
+        onKeyDown={handleKeyDown}
+        style={getInputStyle(!!formErrors[field])}
+        autoComplete="off"
+      />
+      {hint && !formErrors[field] && (
+        <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>{hint}</span>
+      )}
+      {formErrors[field] && (
+        <span style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>⚠ {formErrors[field]}</span>
+      )}
+    </div>
+  );
+}
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 interface Props {
@@ -85,6 +240,7 @@ interface Props {
   isManualSubmitting: boolean;
   hasDrawings: boolean;
   analyzeError?: { error_code?: string; error_message?: string } | null;
+  aiModel?: string;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -96,16 +252,23 @@ export default function AnalysisPanel({
   isManualSubmitting,
   hasDrawings,
   analyzeError,
+  aiModel,
 }: Props) {
+  const modelMeta = getModelMeta(aiModel);
   const [mode, setMode] = useState<"choose" | "manual">("choose");
-  const [form, setForm] = useState<ManualBuildingData>(DEFAULT_MANUAL);
+  const [form, setForm] = useState<ManualFormState>(DEFAULT_FORM);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const handleFormChange = (field: keyof ManualFormState, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setFormErrors(prev => ({ ...prev, [field]: "" }));
+  };
 
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading || isManualSubmitting) {
     const label = isManualSubmitting
       ? "Saving manual measurements..."
-      : "Analyzing Drawing with Gemini AI...";
+      : `${modelMeta.icon} Analyzing Drawing with ${modelMeta.label}...`;
     const sub = isManualSubmitting
       ? "Computing fire equipment requirements from your data..."
       : "Extracting building information, rooms, corridors...";
@@ -133,7 +296,7 @@ export default function AnalysisPanel({
 
   // ── Analysis exists — show results ─────────────────────────────────────────
   if (analysis) {
-    return <AnalysisResults analysis={analysis} onReAnalyze={() => { setMode("choose"); onAnalyze(); }} onManualEdit={() => { setForm({ ...DEFAULT_MANUAL, ...analysis.building_data }); setMode("manual"); }} />;
+    return <AnalysisResults analysis={analysis} aiModel={aiModel} onReAnalyze={() => { setMode("choose"); onAnalyze(); }} onManualEdit={() => { setForm(dataToForm(analysis.building_data)); setMode("manual"); }} />;
   }
 
   // ── AI error state — show error + manual prompt ────────────────────────────
@@ -247,10 +410,10 @@ export default function AnalysisPanel({
               <BrainCircuit size={26} color="#ef4444" />
             </div>
             <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
-              🤖 AI from Drawing
+              {modelMeta.icon} AI from Drawing
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
-              Gemini Vision analyzes your uploaded floor plan and automatically extracts room counts,
+              <strong style={{ color: "var(--text-secondary)" }}>{modelMeta.label}</strong> analyzes your uploaded floor plan and automatically extracts room counts,
               floor area, corridors, and more.
             </div>
             {!hasDrawings && (
@@ -302,23 +465,21 @@ export default function AnalysisPanel({
     <ManualEntryForm
       form={form}
       formErrors={formErrors}
-      onFormChange={(field, value) => {
-        setForm(prev => ({ ...prev, [field]: value }));
-        setFormErrors(prev => ({ ...prev, [field]: "" }));
-      }}
+      onFormChange={handleFormChange}
       onSubmit={() => {
+        const data = parseFormToData(form);
         const errors: Record<string, string> = {};
-        if (!form.estimated_area || form.estimated_area <= 0)
+        if (!data.estimated_area || data.estimated_area <= 0)
           errors.estimated_area = "Floor area must be greater than 0";
-        if (!form.rooms || form.rooms < 0)
+        if (data.rooms < 0)
           errors.rooms = "Rooms must be 0 or more";
-        if (!form.floors || form.floors < 1)
+        if (!data.floors || data.floors < 1)
           errors.floors = "Must have at least 1 floor";
-        if (!form.ceiling_height || form.ceiling_height < 2)
+        if (!data.ceiling_height || data.ceiling_height < 2)
           errors.ceiling_height = "Ceiling height must be ≥ 2.0 m";
         setFormErrors(errors);
         if (Object.keys(errors).length === 0) {
-          onManualSubmit(form);
+          onManualSubmit(data);
         }
       }}
       onBack={() => setMode("choose")}
@@ -334,78 +495,12 @@ function ManualEntryForm({
   onSubmit,
   onBack,
 }: {
-  form: ManualBuildingData;
+  form: ManualFormState;
   formErrors: Record<string, string>;
-  onFormChange: (field: keyof ManualBuildingData, value: string | number) => void;
+  onFormChange: (field: keyof ManualFormState, value: string) => void;
   onSubmit: () => void;
   onBack: () => void;
 }) {
-  const inputStyle = (hasError?: boolean): React.CSSProperties => ({
-    width: "100%",
-    background: "rgba(255,255,255,0.05)",
-    border: `1px solid ${hasError ? "#ef4444" : "var(--border)"}`,
-    borderRadius: 8,
-    padding: "9px 12px",
-    color: "var(--text-primary)",
-    fontSize: 14,
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border-color 0.2s",
-  });
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: 12,
-    color: "var(--text-muted)",
-    fontWeight: 600,
-    marginBottom: 5,
-    display: "block",
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
-  };
-
-  const Field = ({
-    label,
-    field,
-    type = "number",
-    min,
-    max,
-    step,
-    required,
-    hint,
-  }: {
-    label: string;
-    field: keyof ManualBuildingData;
-    type?: string;
-    min?: number;
-    max?: number;
-    step?: number;
-    required?: boolean;
-    hint?: string;
-  }) => (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <label style={labelStyle}>
-        {label} {required && <span style={{ color: "#ef4444" }}>*</span>}
-      </label>
-      <input
-        type={type}
-        min={min}
-        max={max}
-        step={step}
-        value={form[field] as number | string}
-        onChange={e =>
-          onFormChange(field, type === "number" ? parseFloat(e.target.value) || 0 : e.target.value)
-        }
-        style={inputStyle(!!formErrors[field])}
-      />
-      {hint && !formErrors[field] && (
-        <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>{hint}</span>
-      )}
-      {formErrors[field] && (
-        <span style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>⚠ {formErrors[field]}</span>
-      )}
-    </div>
-  );
-
   return (
     <div className="glass-card" style={{ padding: 32 }}>
       {/* Header */}
@@ -437,11 +532,11 @@ function ManualEntryForm({
 
       {/* Building Type */}
       <div style={{ marginBottom: 20 }}>
-        <label style={labelStyle}>Building Type <span style={{ color: "#ef4444" }}>*</span></label>
+        <label style={LABEL_STYLE}>Building Type <span style={{ color: "#ef4444" }}>*</span></label>
         <select
           value={form.building_type}
           onChange={e => onFormChange("building_type", e.target.value)}
-          style={{ ...inputStyle(), appearance: "none" }}
+          style={{ ...getInputStyle(), appearance: "none" }}
         >
           {BUILDING_TYPES.map(bt => (
             <option key={bt.value} value={bt.value}>{bt.label}</option>
@@ -451,66 +546,67 @@ function ManualEntryForm({
 
       {/* Main fields grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
-        <Field
+        <FormField
           label="Total Floor Area (sqm)"
           field="estimated_area"
-          min={1} max={1000000} step={1}
-          required hint="Total built-up area across all floors"
+          form={form} formErrors={formErrors} onFormChange={onFormChange}
+          allowDecimal
+          required placeholder="e.g. 1200" hint="Total built-up area across all floors"
         />
-        <Field
+        <FormField
           label="Number of Rooms"
           field="rooms"
-          min={0} max={10000}
-          required hint="All enclosed spaces"
+          form={form} formErrors={formErrors} onFormChange={onFormChange}
+          required placeholder="e.g. 25" hint="All enclosed spaces"
         />
-        <Field
+        <FormField
           label="Number of Floors"
           field="floors"
-          min={1} max={200}
-          required hint="Include basement if applicable"
+          form={form} formErrors={formErrors} onFormChange={onFormChange}
+          required placeholder="e.g. 4" hint="Include basement if applicable"
         />
-        <Field
+        <FormField
           label="Corridors / Passages"
           field="corridors"
-          min={0} max={1000}
-          hint="Including hallways"
+          form={form} formErrors={formErrors} onFormChange={onFormChange}
+          placeholder="e.g. 8" hint="Including hallways"
         />
-        <Field
+        <FormField
           label="Staircases"
           field="stairs"
-          min={0} max={500}
-          hint="Internal + emergency stairs"
+          form={form} formErrors={formErrors} onFormChange={onFormChange}
+          placeholder="e.g. 2" hint="Internal + emergency stairs"
         />
-        <Field
+        <FormField
           label="Ceiling Height (m)"
           field="ceiling_height"
-          type="number"
-          min={2} max={50} step={0.1}
-          required hint="Typical floor-to-ceiling height"
+          form={form} formErrors={formErrors} onFormChange={onFormChange}
+          allowDecimal
+          required placeholder="e.g. 3.5" hint="Typical floor-to-ceiling height"
         />
-        <Field
+        <FormField
           label="Entrances"
           field="entrances"
-          min={0} max={500}
-          hint="Main entry points"
+          form={form} formErrors={formErrors} onFormChange={onFormChange}
+          placeholder="e.g. 2" hint="Main entry points"
         />
-        <Field
+        <FormField
           label="Emergency Exits"
           field="exits"
-          min={0} max={500}
-          hint="Fire exits and emergency doors"
+          form={form} formErrors={formErrors} onFormChange={onFormChange}
+          placeholder="e.g. 4" hint="Fire exits and emergency doors"
         />
-        <Field
+        <FormField
           label="Open Areas / Lobbies"
           field="open_areas"
-          min={0} max={500}
-          hint="Atriums, lobbies, open floors"
+          form={form} formErrors={formErrors} onFormChange={onFormChange}
+          placeholder="e.g. 1" hint="Atriums, lobbies, open floors"
         />
       </div>
 
       {/* Description */}
       <div style={{ marginBottom: 24 }}>
-        <label style={labelStyle}>Description <span style={{ color: "var(--text-muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
+        <label style={LABEL_STYLE}>Description <span style={{ color: "var(--text-muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
         <textarea
           value={form.description}
           onChange={e => onFormChange("description", e.target.value)}
@@ -518,7 +614,7 @@ function ManualEntryForm({
           maxLength={2000}
           rows={3}
           style={{
-            ...inputStyle(),
+            ...getInputStyle(),
             resize: "vertical",
             fontFamily: "inherit",
             lineHeight: 1.5,
@@ -543,13 +639,16 @@ function ManualEntryForm({
 // ── Analysis Results Component ────────────────────────────────────────────────
 function AnalysisResults({
   analysis,
+  aiModel,
   onReAnalyze,
   onManualEdit,
 }: {
   analysis: Analysis;
+  aiModel?: string;
   onReAnalyze: () => void;
   onManualEdit: () => void;
 }) {
+  const modelMeta = getModelMeta(aiModel || analysis.data_source?.replace("ai_", ""));
   const { building_data: b, recommendations: r } = analysis;
   const isManual = analysis.data_source === "manual";
 
@@ -570,7 +669,7 @@ function AnalysisResults({
           <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
             {isManual
               ? "✏️ Manually entered measurements — BOQ calculated using IS standards"
-              : "🤖 Powered by Gemini Vision AI — Building information extracted from drawing"}
+              : `${modelMeta.icon} Powered by ${modelMeta.visionLabel} — Building information extracted from drawing`}
           </div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
@@ -639,7 +738,7 @@ function AnalysisResults({
               fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6,
             }}>
               <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>
-                {isManual ? "Description: " : "AI Description: "}
+                {isManual ? "Description: " : `${modelMeta.label} Description: `}
               </span>
               {b.description}
             </div>
