@@ -119,7 +119,7 @@ function BOQGenerateModal({
         border: "1px solid var(--border)", boxShadow: "0 40px 80px rgba(0,0,0,0.6)",
         width: "100%", maxWidth: 520, padding: 32,
         animation: "slideUp 0.25s ease",
-      }}>
+      }} className="boq-modal-inner">
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
           <div style={{
@@ -139,7 +139,7 @@ function BOQGenerateModal({
         </div>
 
         {/* Project settings info strip */}
-        <div style={{
+        <div className="std-info-strip" style={{
           display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22,
         }}>
           {/* Standard badge — locked from project */}
@@ -180,7 +180,7 @@ function BOQGenerateModal({
           Manual uses deterministic {stdLabel} formulas. AI uses <strong style={{ color: meta.color }}>{meta.label}</strong> for intelligent generation.
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="boq-type-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {/* Manual */}
           <button
             onClick={() => setState(s => ({ ...s, boqType: "manual" }))}
@@ -468,44 +468,43 @@ export default function ProjectPage() {
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
       `}</style>
 
-      <div style={{ padding: "28px 36px" }}>
+      <div className="mobile-page-pad" style={{ padding: "28px 36px" }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
           <Link href="/projects/history"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-muted)", textDecoration: "none", fontSize: 13, marginBottom: 14 }}>
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-muted)", textDecoration: "none", fontSize: 13, marginBottom: 12 }}>
             <ArrowLeft size={14} /> Back to History
           </Link>
 
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 800 }}>{project.project_name}</h1>
+          {/* Title row */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                <h1 className="page-title" style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>{project.project_name}</h1>
                 <span className={`status-badge ${STATUS_COLORS[project.status]}`}>
                   {STATUS_LABELS[project.status]}
                 </span>
               </div>
-              <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 12, color: "#ef4444", fontWeight: 600 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "#ef4444", fontWeight: 600 }}>
                   {project.project_id}
                 </span>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>•</span>
-                <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{project.client_name}</span>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>•</span>
-                <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{project.location}</span>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>•</span>
-                <span style={{ fontSize: 12, fontWeight: 600 }} className={HAZARD_COLORS[project.hazard_category]}>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>•</span>
+                <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{project.client_name}</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>•</span>
+                <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{project.location}</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>•</span>
+                <span style={{ fontSize: 11, fontWeight: 600 }} className={HAZARD_COLORS[project.hazard_category]}>
                   {HAZARD_LABELS[project.hazard_category]}
                 </span>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>•</span>
-                {/* AI Model badge */}
                 {(() => {
                   const m = AI_MODEL_META[project.ai_model || "gemini"] || AI_MODEL_META.gemini;
                   return (
                     <span style={{
-                      fontSize: 11, fontWeight: 700,
-                      padding: "2px 8px", borderRadius: 20,
+                      fontSize: 10, fontWeight: 700,
+                      padding: "2px 7px", borderRadius: 20,
                       background: `${m.color}15`, border: `1px solid ${m.color}35`,
-                      color: m.color, display: "inline-flex", alignItems: "center", gap: 4,
+                      color: m.color, display: "inline-flex", alignItems: "center", gap: 3,
                     }}>
                       {m.icon} {m.label}
                     </span>
@@ -515,33 +514,37 @@ export default function ProjectPage() {
             </div>
 
             {/* Action Buttons */}
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <div className="project-header-actions" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <button
                 className="btn-secondary"
                 onClick={() => analyzeMutation.mutate()}
                 disabled={analyzeMutation.isPending || !hasDrawings}
-                title={!hasDrawings ? "Upload a drawing first" : ""}
+                title={!hasDrawings ? "Upload a drawing first" : "Run AI analysis"}
+                style={{ fontSize: 12, padding: "8px 14px" }}
               >
-                <Zap size={15} />
-                {analyzeMutation.isPending ? "Analyzing..." : "Analyze Drawing"}
+                <Zap size={14} />
+                {analyzeMutation.isPending ? "Analyzing..." : "Analyze"}
               </button>
               <button
                 className="btn-secondary"
                 onClick={openBOQModal}
                 disabled={boqMutation.isPending || !hasAnalysis}
-                title={!hasAnalysis ? "Run analysis first" : ""}
+                title={!hasAnalysis ? "Run analysis first" : "Generate BOQ"}
+                style={{ fontSize: 12, padding: "8px 14px" }}
               >
-                <FileSpreadsheet size={15} />
-                {boqMutation.isPending ? "Generating..." : "Generate BOQ"}
+                <FileSpreadsheet size={14} />
+                {boqMutation.isPending ? "Generating..." : "Gen BOQ"}
               </button>
               {boq && <ExportButtons projectId={id} />}
               <button
                 className="btn-danger"
+                title="Delete project"
                 onClick={() => {
                   if (confirm("Delete this project? This cannot be undone.")) {
                     deleteMutation.mutate();
                   }
                 }}
+                style={{ padding: "8px 12px" }}
               >
                 <Trash2 size={14} />
               </button>
@@ -550,7 +553,8 @@ export default function ProjectPage() {
         </div>
 
         {/* Workflow Progress */}
-        <div className="glass-card" style={{ padding: "14px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 0 }}>
+        <div className="glass-card" style={{ padding: "12px 16px", marginBottom: 18, overflow: "hidden" }}>
+          <div className="workflow-progress" style={{ display: "flex", alignItems: "center", gap: 0 }}>
           {[
             { label: "Project Created", done: true },
             { label: "Drawing Uploaded", done: hasDrawings, optional: true },
@@ -589,10 +593,11 @@ export default function ProjectPage() {
               )}
             </div>
           ))}
+          </div>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid var(--border)", paddingBottom: 0 }}>
+        <div className="tabs-container" style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid var(--border)", paddingBottom: 0 }}>
           {TABS.map(tab => {
             const active = activeTab === tab.id;
             const Icon = tab.icon;
@@ -618,103 +623,170 @@ export default function ProjectPage() {
           })}
         </div>
 
-        {/* Tab Content */}
         <div className="fade-in">
           {activeTab === "overview" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-              {/* Project Info */}
-              <div className="glass-card" style={{ padding: 24 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, color: "var(--text-primary)" }}>
-                  Project Information
-                </div>
-                {[
-                  ["Project ID", project.project_id],
-                  ["Project Name", project.project_name],
-                  ["Client", project.client_name],
-                  ["Location", project.location],
-                  ["Building Type", BUILDING_TYPE_LABELS[project.building_type] || project.building_type],
-                  ["Hazard Category", HAZARD_LABELS[project.hazard_category]],
-                  ["Created", formatDateTime(project.created_at)],
-                  ["Status", STATUS_LABELS[project.status]],
-                ].map(([k, v]) => (
-                  <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                    <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>{k}</span>
-                    <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500, textAlign: "right" }}>{v}</span>
+            <div className="overview-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+
+              {/* ── Project Info ── */}
+              <div className="glass-card" style={{ padding: "20px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: 9,
+                    background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Building2 size={17} color="#ef4444" />
                   </div>
-                ))}
+                  <span style={{ fontSize: 14, fontWeight: 700 }}>Project Information</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                  {[
+                    ["Project ID", project.project_id, "#ef4444"],
+                    ["Project Name", project.project_name, null],
+                    ["Client", project.client_name, null],
+                    ["Location", project.location, null],
+                    ["Building Type", BUILDING_TYPE_LABELS[project.building_type] || project.building_type, null],
+                    ["Hazard Category", HAZARD_LABELS[project.hazard_category], null],
+                    ["Created", formatDateTime(project.created_at), null],
+                    ["Status", STATUS_LABELS[project.status], null],
+                  ].map(([k, v, color]) => (
+                    <div key={k as string} style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.05)",
+                      gap: 12,
+                    }}>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500, flexShrink: 0 }}>{k}</span>
+                      <span style={{
+                        fontSize: 13, color: color ? (color as string) : "var(--text-primary)",
+                        fontWeight: color ? 700 : 500, textAlign: "right",
+                        fontFamily: k === "Project ID" ? "JetBrains Mono, monospace" : "inherit",
+                        overflow: "hidden", textOverflow: "ellipsis",
+                      }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
                 {project.remarks && (
-                  <div style={{ marginTop: 12, padding: 12, background: "rgba(255,255,255,0.03)", borderRadius: 8 }}>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>REMARKS</div>
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>{project.remarks}</div>
+                  <div style={{ marginTop: 14, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 4, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>REMARKS</div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{project.remarks}</div>
                   </div>
                 )}
               </div>
 
-              {/* Quick Stats */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {analysis && (
-                  <div className="glass-card" style={{ padding: 20 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: "var(--text-primary)" }}>
-                      Building Summary
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      {[
-                        ["Floor Area", `${analysis.building_data.estimated_area.toFixed(0)} sqm`],
-                        ["Floors", analysis.building_data.floors],
-                        ["Rooms", analysis.building_data.rooms],
-                        ["Corridors", analysis.building_data.corridors],
-                        ["Staircases", analysis.building_data.stairs],
-                        ["Exits", analysis.building_data.exits],
-                      ].map(([k, v]) => (
-                        <div key={k as string} style={{ background: "rgba(239,68,68,0.05)", borderRadius: 8, padding: 10 }}>
-                          <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</div>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: "#ef4444" }}>{v}</div>
+              {/* ── Right Column: Stats ── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+                {analysis ? (
+                  <>
+                    {/* Building Summary */}
+                    <div className="glass-card" style={{ padding: "18px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                        <div style={{
+                          width: 30, height: 30, borderRadius: 8,
+                          background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.25)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <Building2 size={15} color="#3b82f6" />
                         </div>
-                      ))}
+                        <span style={{ fontSize: 13, fontWeight: 700 }}>Building Summary</span>
+                      </div>
+                      <div className="building-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                        {[
+                          { label: "Floor Area", value: `${analysis.building_data.estimated_area.toFixed(0)}`, unit: "sqm", color: "#3b82f6" },
+                          { label: "Floors", value: analysis.building_data.floors, unit: "", color: "#8b5cf6" },
+                          { label: "Rooms", value: analysis.building_data.rooms, unit: "", color: "#10b981" },
+                          { label: "Corridors", value: analysis.building_data.corridors, unit: "", color: "#f59e0b" },
+                          { label: "Staircases", value: analysis.building_data.stairs, unit: "", color: "#ef4444" },
+                          { label: "Exits", value: analysis.building_data.exits, unit: "", color: "#06b6d4" },
+                        ].map(item => (
+                          <div key={item.label} style={{
+                            background: `${item.color}08`,
+                            border: `1px solid ${item.color}20`,
+                            borderRadius: 10, padding: "10px 8px", textAlign: "center",
+                          }}>
+                            <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
+                              {item.label}
+                            </div>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: item.color, lineHeight: 1 }}>
+                              {item.value}
+                            </div>
+                            {item.unit && <div style={{ fontSize: 9, color: item.color, opacity: 0.7, marginTop: 2 }}>{item.unit}</div>}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-                {analysis && (
-                  <div className="glass-card" style={{ padding: 20 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: "var(--text-primary)" }}>
-                      Fire Equipment Summary
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      {[
-                        ["Smoke Detectors", analysis.recommendations.smoke_detectors, "#3b82f6"],
-                        ["Heat Detectors", analysis.recommendations.heat_detectors, "#f59e0b"],
-                        ["MCP", analysis.recommendations.mcp, "#ef4444"],
-                        ["Hooters", analysis.recommendations.hooters, "#8b5cf6"],
-                        ["Sprinklers", analysis.recommendations.sprinklers, "#06b6d4"],
-                        ["Hydrants", analysis.recommendations.hydrants, "#10b981"],
-                      ].map(([k, v, c]) => (
-                        <div key={k as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8 }}>
-                          <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{k}</span>
-                          <span style={{ fontSize: 16, fontWeight: 800, color: c as string }}>{v}</span>
+
+                    {/* Fire Equipment */}
+                    <div className="glass-card" style={{ padding: "18px 20px", flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                        <div style={{
+                          width: 30, height: 30, borderRadius: 8,
+                          background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <Zap size={15} color="#ef4444" />
                         </div>
-                      ))}
+                        <span style={{ fontSize: 13, fontWeight: 700 }}>Fire Equipment</span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {[
+                          ["Smoke Detectors", analysis.recommendations.smoke_detectors, "#3b82f6"],
+                          ["Heat Detectors", analysis.recommendations.heat_detectors, "#f59e0b"],
+                          ["Call Points (MCP)", analysis.recommendations.mcp, "#ef4444"],
+                          ["Hooters", analysis.recommendations.hooters, "#8b5cf6"],
+                          ["Sprinklers", analysis.recommendations.sprinklers, "#06b6d4"],
+                          ["Hydrants", analysis.recommendations.hydrants, "#10b981"],
+                        ].map(([k, v, c]) => (
+                          <div key={k as string} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div style={{ fontSize: 11, color: "var(--text-secondary)", flexShrink: 0, width: 110 }}>{k}</div>
+                            <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 999, height: 5, overflow: "hidden" }}>
+                              <div style={{
+                                height: "100%", borderRadius: 999,
+                                background: c as string,
+                                width: `${Math.min(100, ((v as number) / 50) * 100)}%`,
+                                transition: "width 1s ease",
+                              }} />
+                            </div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: c as string, width: 28, textAlign: "right", flexShrink: 0 }}>
+                              {v}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-                {!analysis && (
-                  <div className="glass-card" style={{ padding: 24, textAlign: "center", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
-                    <Zap size={36} color="var(--text-muted)" style={{ marginBottom: 4 }} />
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-secondary)" }}>
-                      No Analysis Yet
+                  </>
+                ) : (
+                  /* No analysis state */
+                  <div className="glass-card" style={{
+                    padding: "36px 24px", textAlign: "center", flex: 1,
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14,
+                    background: "rgba(239,68,68,0.02)", border: "1px dashed rgba(239,68,68,0.2)",
+                  }}>
+                    <div style={{
+                      width: 60, height: 60, borderRadius: 18,
+                      background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Zap size={28} color="#ef4444" />
                     </div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", maxWidth: 240 }}>
-                      Upload a drawing for AI extraction, or go directly to Analysis and enter measurements manually.
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 6 }}>
+                        No Analysis Yet
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6, maxWidth: 220, margin: "0 auto" }}>
+                        Upload a floor plan drawing for AI extraction, or enter measurements manually.
+                      </div>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
                       <button className="btn-secondary"
                         onClick={() => setActiveTab("drawings")}
-                        style={{ padding: "8px 14px", fontSize: 12 }}>
+                        style={{ padding: "9px 16px", fontSize: 12 }}>
                         <Upload size={13} /> Upload Drawing
                       </button>
                       <button className="btn-primary"
                         onClick={() => setActiveTab("analysis")}
-                        style={{ padding: "8px 14px", fontSize: 12 }}>
-                        <Zap size={13} /> Go to Analysis
+                        style={{ padding: "9px 16px", fontSize: 12 }}>
+                        <Zap size={13} /> Start Analysis
                       </button>
                     </div>
                   </div>
@@ -771,9 +843,9 @@ export default function ProjectPage() {
         </div>
 
         {/* ── Next / Back Navigation Bar ──────────────────────────────────────── */}
-        <div style={{
+        <div className="nav-bar-bottom" style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          marginTop: 28, paddingTop: 20, borderTop: "1px solid var(--border)",
+          marginTop: 24, paddingTop: 18, borderTop: "1px solid var(--border)",
         }}>
           {/* Back button */}
           {!isFirstTab ? (

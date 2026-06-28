@@ -7,6 +7,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <Sidebar />
       <main
+        className="mobile-main-content"
         style={{
           flex: 1,
           marginLeft: "var(--sidebar-w)",

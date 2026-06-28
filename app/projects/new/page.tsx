@@ -191,7 +191,7 @@ export default function NewProjectPage() {
 
   return (
     <AppLayout>
-      <div style={{ padding: "32px 36px" }}>
+      <div className="mobile-page-pad" style={{ padding: "32px 36px" }}>
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
@@ -204,7 +204,7 @@ export default function NewProjectPage() {
               <FolderPlus size={22} color="white" />
             </div>
             <div>
-              <h1 style={{ fontSize: 24, fontWeight: 800 }}>New Project</h1>
+              <h1 className="page-title" style={{ fontSize: 24, fontWeight: 800 }}>New Project</h1>
               <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
                 Create a new fire BOQ project and select your AI model
               </p>
@@ -219,7 +219,7 @@ export default function NewProjectPage() {
               <FileText size={18} color="#ef4444" />
               <span style={{ fontSize: 15, fontWeight: 700 }}>Project Details</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <FormField label="Project Name" required>
                 <input
                   className="fire-input"
@@ -284,7 +284,7 @@ export default function NewProjectPage() {
               <span style={{ fontSize: 15, fontWeight: 700 }}>Hazard Category</span>
               <span style={{ fontSize: 12, color: "var(--text-muted)" }}>— per NBC 2016 Part 4</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div className="hazard-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               {HAZARD_TYPES.map(ht => (
                 <div
                   key={ht.value}
@@ -325,7 +325,7 @@ export default function NewProjectPage() {
               This determines <strong style={{ color: "var(--text-secondary)" }}>coverage areas, spacing rules, and component specifications</strong> used
               in all BOQ calculations for this project. Pre-selected when generating BOQ.
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="standard-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {FIRE_STANDARDS.map(std => {
                 const selected = form.fire_standard === std.value;
                 return (
@@ -379,7 +379,7 @@ export default function NewProjectPage() {
               You can change this later from project settings.
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="model-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {AI_MODELS.map(model => {
                 const selected = form.ai_model === model.value;
                 return (
@@ -488,7 +488,7 @@ export default function NewProjectPage() {
           </div>
 
           {/* Submit */}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", flexWrap: "wrap" }}>
             <button
               type="submit"
               className="btn-primary"

@@ -388,3 +388,412 @@ body {
   border-radius: 14px;
   overflow: hidden;
 }
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE BOTTOM NAVIGATION BAR
+══════════════════════════════════════════════════════════ */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(15, 22, 41, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(239, 68, 68, 0.15);
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.mobile-bottom-nav-inner {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  min-width: 56px;
+}
+
+.mobile-nav-item span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-family: 'Inter', sans-serif;
+}
+
+.mobile-nav-item.active {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.mobile-nav-item:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Mobile header */
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  background: rgba(15, 22, 41, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+  padding: 12px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.mobile-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PROJECT DETAIL — MOBILE TABS
+══════════════════════════════════════════════════════════ */
+.mobile-tabs-scroll {
+  display: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+.mobile-tabs-scroll::-webkit-scrollbar { display: none; }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Show/hide mobile elements */
+  .mobile-bottom-nav { display: flex; flex-direction: column; }
+  .mobile-header { display: flex; }
+  .hide-on-mobile { display: none !important; }
+  .mobile-only { display: block !important; }
+  .mobile-tabs-scroll { display: flex; }
+
+  /* Root sidebar width zero on mobile */
+  :root { --sidebar-w: 0px; }
+
+  /* Main content padding for mobile */
+  .mobile-main-content {
+    margin-top: 64px !important;
+    margin-left: 0 !important;
+    padding-bottom: 80px !important;
+    min-height: 100vh;
+  }
+
+  /* Page padding adjustments */
+  .mobile-page-pad {
+    padding: 16px !important;
+  }
+
+  /* Grid: 4-column → 2-column → 1-column */
+  .stats-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .stats-grid-4 .stat-card {
+    padding: 16px !important;
+  }
+  .stat-value { font-size: 22px !important; }
+
+  /* Quick actions: 3-col → 1-col stacked in row */
+  .quick-actions-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+  .quick-actions-grid .glass-card {
+    padding: 12px !important;
+  }
+
+  /* New project form: 2-col → 1-col */
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Hazard / Standard selector: 3-col → 1-col */
+  .hazard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* AI model grid: 2-col → 1-col */
+  .model-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Fire standard: 2-col → 1-col */
+  .standard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Project Overview: 2-col → 1-col */
+  .overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Workflow progress: scrollable */
+  .workflow-progress {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    flex-wrap: nowrap !important;
+    min-width: max-content;
+  }
+
+  /* Tabs: horizontal scroll */
+  .tabs-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+    padding-bottom: 2px;
+  }
+  .tabs-container::-webkit-scrollbar { display: none; }
+
+  /* History page: table → cards */
+  .history-table-wrapper { display: none; }
+  .history-cards-wrapper { display: flex !important; flex-direction: column; gap: 12px; }
+
+  /* Filters row: wrap */
+  .filters-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .filters-row select {
+    width: 100% !important;
+  }
+
+  /* Header actions: stack */
+  .page-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  /* Project header actions */
+  .project-header-actions {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  /* Button sizes on mobile */
+  .btn-primary, .btn-secondary {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  /* Glass card inner padding */
+  .mobile-card-pad {
+    padding: 16px !important;
+  }
+
+  /* Nav/back navigation bar */
+  .nav-bar-bottom {
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+  .nav-bar-bottom .step-dots {
+    justify-content: center;
+  }
+  .nav-bar-bottom .nav-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+  }
+  .nav-bar-bottom .btn-secondary,
+  .nav-bar-bottom .btn-primary {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Building summary grid on overview */
+  .building-summary-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Fire equipment grid */
+  .fire-equip-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* BOQ generate modal */
+  .boq-modal-inner {
+    padding: 20px !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 20px 20px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+  .boq-modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* BOQ type selection: mobile */
+  .boq-type-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Std select modal info strip */
+  .std-info-strip {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Chat bubbles wider */
+  .chat-bubble-user, .chat-bubble-assistant {
+    max-width: 95% !important;
+  }
+
+  /* Dropzone */
+  .dropzone {
+    padding: 28px 16px !important;
+  }
+
+  /* BOQ Table — horizontal scroll */
+  .boq-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 14px;
+  }
+  .boq-table {
+    min-width: 500px;
+  }
+
+  /* Project ID font size */
+  .project-id-mono {
+    font-size: 10px !important;
+  }
+
+  /* Page header title font size */
+  .page-title {
+    font-size: 20px !important;
+  }
+  .page-subtitle { font-size: 12px !important; }
+}
+
+/* Small phones */
+@media (max-width: 400px) {
+  .stats-grid-4 {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  .quick-actions-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  .building-summary-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root { --sidebar-w: 220px; }
+  .stats-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   DRAWING UPLOAD — DRAWING TYPE GRID
+══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Drawing type: 3-col → 1-col on mobile */
+  .drawing-type-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* BOQ section mobile cards: show them */
+  .boq-table-wrapper {
+    display: none !important;
+  }
+  .history-cards-wrapper {
+    display: flex !important;
+  }
+
+  /* AI Assistant: smaller height on mobile */
+  .ai-assistant-container {
+    height: calc(100vh - 220px) !important;
+    min-height: 400px !important;
+  }
+
+  /* Analysis chooser: 2-col → 1-col */
+  .standard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Analysis results: 2-col → 1-col */
+  .analysis-results-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* building summary: 3-col maintained */
+  .building-summary-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  /* BOQ header: wrap badges */
+  .boq-header-badges {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  /* Drawing upload zone: smaller padding */
+  .drawing-dropzone {
+    padding: 28px 16px !important;
+  }
+
+  /* Filters: stack on mobile */
+  .filters-row input, .filters-row select {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Very small phones */
+  .building-summary-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .overview-grid .glass-card {
+    padding: 14px !important;
+  }
+  /* Chat suggestions: wrap tighter */
+  .chat-suggested-btn {
+    font-size: 10px !important;
+    padding: 4px 8px !important;
+  }
+}

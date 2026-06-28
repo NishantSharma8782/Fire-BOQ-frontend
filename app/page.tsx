@@ -47,21 +47,21 @@ function StatCard({ value, label, icon: Icon, color }: {
 function ProjectCard({ project }: { project: ProjectSummary }) {
   return (
     <Link href={`/projects/${project.project_id}`} style={{ textDecoration: "none" }}>
-      <div className="glass-card glass-card-hover" style={{ padding: "20px 24px", cursor: "pointer" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>
+      <div className="glass-card glass-card-hover" style={{ padding: "16px 20px", cursor: "pointer" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {project.project_name}
             </div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "JetBrains Mono, monospace" }}>
+            <div className="project-id-mono" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "JetBrains Mono, monospace" }}>
               {project.project_id}
             </div>
           </div>
-          <span className={`status-badge ${STATUS_COLORS[project.status]}`}>
+          <span className={`status-badge ${STATUS_COLORS[project.status]}`} style={{ flexShrink: 0, marginLeft: 8 }}>
             {STATUS_LABELS[project.status]}
           </span>
         </div>
-        <div style={{ display: "flex", gap: 20, marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
           <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
             <span style={{ color: "var(--text-muted)" }}>Client: </span>
             {project.client_name}
@@ -71,8 +71,8 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
             {BUILDING_TYPE_LABELS[project.building_type] || project.building_type}
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {project.drawing_count > 0 && (
               <span style={{
                 fontSize: 11, padding: "2px 8px", borderRadius: 999,
@@ -123,23 +123,24 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div style={{ padding: "32px 36px", maxWidth: 1200 }}>
+      <div className="mobile-page-pad" style={{ padding: "32px 36px", maxWidth: 1200 }}>
         {/* Header */}
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
             <div style={{
-              width: 48, height: 48, borderRadius: 14,
+              width: 44, height: 44, borderRadius: 14,
               background: "linear-gradient(135deg, #ef4444, #f97316)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 6px 20px rgba(239,68,68,0.35)"
+              boxShadow: "0 6px 20px rgba(239,68,68,0.35)",
+              flexShrink: 0,
             }}>
-              <Flame size={26} color="white" />
+              <Flame size={24} color="white" />
             </div>
             <div>
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)" }}>
+              <h1 className="page-title" style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)" }}>
                 Dashboard
               </h1>
-              <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
+              <p className="page-subtitle" style={{ fontSize: 12, color: "var(--text-muted)" }}>
                 AI-Powered Fire Safety BOQ Platform
               </p>
             </div>
@@ -147,7 +148,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
+        <div className="stats-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
           <StatCard value={total} label="Total Projects" icon={FolderOpen} color="#ef4444" />
           <StatCard value={analyzed} label="AI Analyzed" icon={Zap} color="#f59e0b" />
           <StatCard value={boqReady} label="BOQ Generated" icon={CheckCircle2} color="#10b981" />
@@ -155,7 +156,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 32 }}>
+        <div className="quick-actions-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 24 }}>
           {[
             {
               href: "/projects/new",
@@ -175,24 +176,24 @@ export default function Dashboard() {
               href: "#",
               icon: ShieldCheck,
               title: "Standards",
-              desc: "NBC 2016 · IS 2189 · IS 15105",
+              desc: "NBC 2016 · IS 2189",
               color: "#10b981",
             },
           ].map(({ href, icon: Icon, title, desc, color }) => (
             <Link key={title} href={href} style={{ textDecoration: "none" }}>
-              <div className="glass-card glass-card-hover" style={{ padding: 20, cursor: "pointer" }}>
+              <div className="glass-card glass-card-hover" style={{ padding: "16px 16px", cursor: "pointer", height: "100%" }}>
                 <div style={{
-                  width: 40, height: 40, borderRadius: 11,
+                  width: 38, height: 38, borderRadius: 10,
                   background: `${color}20`, border: `1px solid ${color}40`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  marginBottom: 12
+                  marginBottom: 10
                 }}>
-                  <Icon size={20} color={color} />
+                  <Icon size={18} color={color} />
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 3 }}>
                   {title}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{desc}</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{desc}</div>
               </div>
             </Link>
           ))}
@@ -200,13 +201,13 @@ export default function Dashboard() {
 
         {/* Recent Projects */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
               Recent Projects
             </h2>
             <Link href="/projects/history"
               style={{
-                display: "flex", alignItems: "center", gap: 6,
+                display: "flex", alignItems: "center", gap: 5,
                 fontSize: 13, color: "#ef4444", textDecoration: "none", fontWeight: 500
               }}>
               View all <ArrowRight size={14} />
@@ -214,30 +215,30 @@ export default function Dashboard() {
           </div>
 
           {isLoading ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[1, 2, 3].map(i => (
-                <div key={i} className="glass-card shimmer" style={{ height: 100 }} />
+                <div key={i} className="glass-card shimmer" style={{ height: 90 }} />
               ))}
             </div>
           ) : recent.length === 0 ? (
             <div className="glass-card" style={{
-              padding: "60px 24px", textAlign: "center"
+              padding: "48px 20px", textAlign: "center"
             }}>
-              <Flame size={48} color="var(--text-muted)" style={{ marginBottom: 16 }} />
-              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 8 }}>
+              <Flame size={44} color="var(--text-muted)" style={{ marginBottom: 14 }} />
+              <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 6 }}>
                 No projects yet
               </div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>
                 Create your first fire BOQ project to get started
               </div>
               <Link href="/projects/new">
                 <button className="btn-primary">
-                  <FolderPlus size={16} /> Create Project
+                  <FolderPlus size={15} /> Create Project
                 </button>
               </Link>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {recent.map(p => <ProjectCard key={p.id} project={p} />)}
             </div>
           )}

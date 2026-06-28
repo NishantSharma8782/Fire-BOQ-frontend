@@ -273,7 +273,7 @@ export default function AnalysisPanel({
       ? "Computing fire equipment requirements from your data..."
       : "Extracting building information, rooms, corridors...";
     return (
-      <div className="glass-card" style={{ padding: 60, textAlign: "center" }}>
+      <div className="glass-card" style={{ padding: "48px 32px", textAlign: "center" }}>
         <div
           style={{
             width: 64,
@@ -388,7 +388,7 @@ export default function AnalysisPanel({
           Both methods produce identical BOQ calculations.
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 620, margin: "0 auto" }}>
+        <div className="standard-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 680, margin: "0 auto" }}>
           {/* AI Option */}
           <button
             onClick={onAnalyze}
@@ -502,7 +502,7 @@ function ManualEntryForm({
   onBack: () => void;
 }) {
   return (
-    <div className="glass-card" style={{ padding: 32 }}>
+    <div className="glass-card" style={{ padding: "24px 20px" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
         <div style={{
@@ -544,8 +544,8 @@ function ManualEntryForm({
         </select>
       </div>
 
-      {/* Main fields grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
+      {/* Main fields grid — 2-col on desktop, 1-col on mobile */}
+      <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
         <FormField
           label="Total Floor Area (sqm)"
           field="estimated_area"
@@ -623,7 +623,7 @@ function ManualEntryForm({
       </div>
 
       {/* Submit */}
-      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
         <button className="btn-secondary" onClick={onBack} style={{ padding: "10px 20px" }}>
           Cancel
         </button>
@@ -690,7 +690,7 @@ function AnalysisResults({
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <div className="overview-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         {/* Building Information */}
         <div className="glass-card" style={{ padding: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
@@ -704,7 +704,7 @@ function AnalysisResults({
             <span style={{ fontSize: 14, fontWeight: 700 }}>Building Information</span>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div className="building-summary-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {[
               { label: "Floor Area", value: `${b.estimated_area.toFixed(0)} sqm`, color: "#3b82f6" },
               { label: "Floors", value: b.floors, color: "#8b5cf6" },

@@ -50,13 +50,14 @@ export default function ExportButtons({ projectId }: Props) {
   ];
 
   return (
-    <div style={{ display: "flex", gap: 6 }}>
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
       {buttons.map(btn => {
         const Icon = btn.icon;
         return (
           <button
             key={btn.label}
             onClick={() => downloadFile(btn.url, btn.filename)}
+            title={`Export as ${btn.label}`}
             style={{
               display: "flex", alignItems: "center", gap: 5,
               padding: "8px 14px", borderRadius: 8,
@@ -64,7 +65,8 @@ export default function ExportButtons({ projectId }: Props) {
               background: `${btn.color}15`,
               border: `1px solid ${btn.color}40`,
               color: btn.color, cursor: "pointer",
-              transition: "all 0.2s"
+              transition: "all 0.2s",
+              whiteSpace: "nowrap",
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLButtonElement).style.background = `${btn.color}25`;
@@ -73,7 +75,7 @@ export default function ExportButtons({ projectId }: Props) {
               (e.currentTarget as HTMLButtonElement).style.background = `${btn.color}15`;
             }}
           >
-            <Download size={13} />
+            <Icon size={13} />
             {btn.label}
           </button>
         );

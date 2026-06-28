@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Send, Bot, User, ChevronUp, Loader2, Sparkles } from "lucide-react";
+import { Send, Bot, User, ChevronUp, Loader2, Sparkles, Mic } from "lucide-react";
 import { chatApi } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
 
@@ -13,14 +13,14 @@ interface Props {
 
 const SUGGESTED_QUESTIONS = [
   "Explain this BOQ",
-  "Why are these many smoke detectors required?",
-  "How is the sprinkler quantity calculated?",
-  "What fire standards apply to this project?",
-  "What is the hydrant spacing requirement?",
+  "Why so many smoke detectors?",
+  "How is sprinkler quantity calculated?",
+  "What fire standards apply here?",
+  "What is hydrant spacing requirement?",
 ];
 
 const PAGE_SIZE = 30;
-const TYPING_SPEED_MS = 10; // ms per character
+const TYPING_SPEED_MS = 10;
 
 // ── Typing animation ──────────────────────────────────────────────────────────
 function useTypingText(fullText: string, active: boolean) {
@@ -54,29 +54,48 @@ function useTypingText(fullText: string, active: boolean) {
 function MessageBubble({ msg, animate }: { msg: ChatMessage; animate: boolean }) {
   const { displayed, done } = useTypingText(msg.content, animate);
   const text = animate ? displayed : msg.content;
+  const isUser = msg.role === "user";
 
   return (
     <div style={{
       display: "flex",
-      flexDirection: msg.role === "user" ? "row-reverse" : "row",
-      alignItems: "flex-start",
+      flexDirection: isUser ? "row-reverse" : "row",
+      alignItems: "flex-end",
       gap: 10,
+      padding: "0 4px",
     }}>
+      {/* Avatar */}
       <div style={{
-        width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-        background: msg.role === "user"
+        width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+        background: isUser
           ? "linear-gradient(135deg, #ef4444, #f97316)"
-          : "linear-gradient(135deg, rgba(139,92,246,0.4), rgba(59,130,246,0.3))",
-        border: msg.role === "user" ? "none" : "1px solid rgba(139,92,246,0.4)",
+          : "linear-gradient(135deg, rgba(139,92,246,0.5), rgba(59,130,246,0.4))",
+        border: isUser ? "none" : "1px solid rgba(139,92,246,0.5)",
         display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: isUser
+          ? "0 2px 8px rgba(239,68,68,0.3)"
+          : "0 2px 8px rgba(139,92,246,0.2)",
       }}>
-        {msg.role === "user" ? <User size={14} color="white" /> : <Bot size={14} color="#a78bfa" />}
+        {isUser ? <User size={15} color="white" /> : <Bot size={15} color="#c4b5fd" />}
       </div>
 
-      <div
-        className={msg.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}
-        style={{ maxWidth: "78%", whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: 13 }}
-      >
+      {/* Bubble */}
+      <div style={{
+        maxWidth: "75%",
+        background: isUser
+          ? "linear-gradient(135deg, rgba(239,68,68,0.22), rgba(249,115,22,0.18))"
+          : "rgba(255,255,255,0.05)",
+        border: isUser
+          ? "1px solid rgba(239,68,68,0.3)"
+          : "1px solid rgba(255,255,255,0.1)",
+        borderRadius: isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+        padding: "10px 14px",
+        fontSize: 14,
+        lineHeight: 1.65,
+        color: "var(--text-primary)",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+      }}>
         {text}
         {animate && !done && (
           <span style={{
@@ -101,8 +120,9 @@ export default function AIAssistant({ projectId }: Props) {
   const [input, setInput] = useState("");
   const [animatingIdx, setAnimatingIdx] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // ── Load history on first mount ─────────────────────────────────────────────
+  // ── Load history ─────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     async function loadHistory() {
@@ -113,17 +133,15 @@ export default function AIAssistant({ projectId }: Props) {
         setTotalSaved(data.total);
         setCurrentPage(1);
         if (data.messages.length === 0) {
-          // No history — show welcome message
           setMessages([{
             role: "assistant",
-            content: "Hello! I'm your Fire BOQ AI assistant. I can explain the BOQ calculations, fire system recommendations, and answer questions about fire safety standards for this project. How can I help you?",
+            content: "Hello! I'm your Fire BOQ AI assistant 🔥\n\nI can explain BOQ calculations, fire system recommendations, and answer questions about fire safety standards for this project.\n\nHow can I help you?",
           }]);
         } else {
           setMessages(data.messages);
         }
         setHistoryLoaded(true);
       } catch {
-        // On error just show welcome message
         setMessages([{
           role: "assistant",
           content: "Hello! I'm your Fire BOQ AI assistant. How can I help you?",
@@ -135,7 +153,7 @@ export default function AIAssistant({ projectId }: Props) {
     return () => { cancelled = true; };
   }, [projectId]);
 
-  // ── Load older messages (prepend) ──────────────────────────────────────────
+  // ── Load older messages ────────────────────────────────────────────────────
   const handleLoadOlder = async () => {
     if (loadingOlder || currentPage >= totalPages) return;
     setLoadingOlder(true);
@@ -151,15 +169,14 @@ export default function AIAssistant({ projectId }: Props) {
     }
   };
 
-  // ── Scroll to bottom on new message ────────────────────────────────────────
+  // ── Scroll to bottom ───────────────────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  // ── Send mutation ───────────────────────────────────────────────────────────
+  // ── Send mutation ──────────────────────────────────────────────────────────
   const sendMutation = useMutation({
     mutationFn: (message: string) => {
-      // Send last 8 messages as context (exact same as before)
       const history = messages.slice(-8);
       return chatApi.send(projectId, message, history);
     },
@@ -171,10 +188,10 @@ export default function AIAssistant({ projectId }: Props) {
       };
       setMessages(prev => {
         const updated = [...prev, aiMsg];
-        setAnimatingIdx(updated.length - 1); // animate the last message
+        setAnimatingIdx(updated.length - 1);
         return updated;
       });
-      setTotalSaved(prev => prev + 2); // user + AI
+      setTotalSaved(prev => prev + 2);
     },
     onError: () => {
       toast.error("Failed to get AI response");
@@ -188,58 +205,80 @@ export default function AIAssistant({ projectId }: Props) {
   const handleSend = (text?: string) => {
     const msg = (text || input).trim();
     if (!msg || sendMutation.isPending) return;
-    // Optimistically add user message to state
     setMessages(prev => [...prev, { role: "user", content: msg }]);
     setAnimatingIdx(null);
     setInput("");
     sendMutation.mutate(msg);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   const isFirstOpen = historyLoaded && messages.length === 1 && messages[0].role === "assistant";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 300px)", minHeight: 540 }}>
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      height: "calc(100vh - 290px)",
+      minHeight: 480,
+      borderRadius: 16,
+      overflow: "hidden",
+      border: "1px solid rgba(139,92,246,0.15)",
+      background: "rgba(10,14,30,0.6)",
+    }}>
 
-      {/* Header */}
-      <div className="glass-card" style={{
-        padding: "12px 18px", marginBottom: 10,
-        background: "rgba(139,92,246,0.05)", border: "1px solid rgba(139,92,246,0.2)",
-        display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
+      {/* ── Header ── */}
+      <div style={{
+        padding: "14px 18px",
+        background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.05))",
+        borderBottom: "1px solid rgba(139,92,246,0.15)",
+        display: "flex", alignItems: "center", gap: 12, flexShrink: 0,
       }}>
         <div style={{
-          width: 34, height: 34, borderRadius: 10,
+          width: 38, height: 38, borderRadius: 11,
           background: "linear-gradient(135deg, rgba(139,92,246,0.3), rgba(59,130,246,0.2))",
           border: "1px solid rgba(139,92,246,0.4)",
           display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 4px 12px rgba(139,92,246,0.2)",
         }}>
-          <Bot size={18} color="#a78bfa" />
+          <Bot size={20} color="#c4b5fd" />
         </div>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#a78bfa" }}>Fire BOQ AI Assistant</div>
-          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-            Powered by Gemini AI • Ask about BOQ, calculations, standards
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#c4b5fd" }}>Fire BOQ AI Assistant</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            Powered by AI • BOQ, calculations, fire standards
           </div>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           {totalSaved > 0 && (
             <span style={{
               fontSize: 10, padding: "2px 8px", borderRadius: 999,
-              background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)",
+              background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.25)",
               color: "#a78bfa", fontWeight: 600,
             }}>
               {totalSaved} msgs
             </span>
           )}
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", animation: "pulse 2s infinite" }} />
-          <span style={{ fontSize: 11, color: "#10b981" }}>Online</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", animation: "pulse 2s infinite" }} />
+            <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>Online</span>
+          </div>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="glass-card" style={{
-        flex: 1, overflowY: "auto", padding: "14px 16px",
-        display: "flex", flexDirection: "column", gap: 14,
-        marginBottom: 10,
+      {/* ── Messages Area ── */}
+      <div style={{
+        flex: 1,
+        overflowY: "auto",
+        padding: "16px 14px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
       }}>
         {/* Load older */}
         {currentPage < totalPages && (
@@ -248,7 +287,7 @@ export default function AIAssistant({ projectId }: Props) {
               onClick={handleLoadOlder}
               disabled={loadingOlder}
               style={{
-                padding: "5px 16px", borderRadius: 999, fontSize: 11, fontWeight: 600,
+                padding: "6px 18px", borderRadius: 999, fontSize: 11, fontWeight: 600,
                 background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)",
                 color: "#a78bfa", cursor: loadingOlder ? "wait" : "pointer",
                 display: "inline-flex", alignItems: "center", gap: 5,
@@ -262,15 +301,15 @@ export default function AIAssistant({ projectId }: Props) {
           </div>
         )}
 
-        {/* History loading skeleton */}
+        {/* History loading */}
         {!historyLoaded && (
-          <div style={{ textAlign: "center", padding: "30px 0" }}>
-            <Loader2 size={22} color="#a78bfa" style={{ animation: "spin 1s linear infinite" }} />
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 10 }}>Loading chat history...</div>
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <Loader2 size={24} color="#a78bfa" style={{ animation: "spin 1s linear infinite", marginBottom: 10 }} />
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading chat history...</div>
           </div>
         )}
 
-        {/* Messages list */}
+        {/* Messages */}
         {historyLoaded && messages.map((msg, i) => (
           <MessageBubble
             key={i}
@@ -279,76 +318,127 @@ export default function AIAssistant({ projectId }: Props) {
           />
         ))}
 
-        {/* Thinking dots */}
+        {/* Thinking indicator */}
         {sendMutation.isPending && (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "0 4px" }}>
             <div style={{
-              width: 30, height: 30, borderRadius: "50%",
-              background: "linear-gradient(135deg, rgba(139,92,246,0.4), rgba(59,130,246,0.3))",
-              border: "1px solid rgba(139,92,246,0.4)",
+              width: 32, height: 32, borderRadius: "50%",
+              background: "linear-gradient(135deg, rgba(139,92,246,0.5), rgba(59,130,246,0.4))",
+              border: "1px solid rgba(139,92,246,0.5)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <Bot size={14} color="#a78bfa" />
+              <Bot size={15} color="#c4b5fd" />
             </div>
-            <div className="chat-bubble-assistant" style={{ display: "flex", gap: 5, alignItems: "center", padding: "12px 16px" }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#a78bfa", animation: "bounce 0.6s infinite" }} />
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#a78bfa", animation: "bounce 0.6s 0.2s infinite" }} />
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#a78bfa", animation: "bounce 0.6s 0.4s infinite" }} />
+            <div style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "18px 18px 18px 4px",
+              padding: "12px 18px",
+              display: "flex", gap: 5, alignItems: "center",
+            }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#a78bfa", animation: "bounce 0.6s infinite" }} />
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#a78bfa", animation: "bounce 0.6s 0.2s infinite" }} />
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#a78bfa", animation: "bounce 0.6s 0.4s infinite" }} />
             </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      {/* Suggested questions */}
+      {/* ── Suggested Questions ── */}
       {isFirstOpen && (
-        <div style={{ marginBottom: 8, display: "flex", flexWrap: "wrap", gap: 6, flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: "var(--text-muted)", alignSelf: "center", marginRight: 2 }}>
-            <Sparkles size={11} style={{ display: "inline", marginRight: 3 }} />Try:
-          </span>
-          {SUGGESTED_QUESTIONS.map(q => (
-            <button
-              key={q}
-              onClick={() => handleSend(q)}
-              style={{
-                padding: "4px 11px", borderRadius: 999, fontSize: 11, fontWeight: 500,
-                background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)",
-                color: "#a78bfa", cursor: "pointer", transition: "all 0.2s",
-              }}
-            >
-              {q}
-            </button>
-          ))}
+        <div style={{
+          padding: "10px 14px 4px",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <Sparkles size={12} color="#a78bfa" />
+            <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>Suggested questions</span>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {SUGGESTED_QUESTIONS.map(q => (
+              <button
+                key={q}
+                onClick={() => handleSend(q)}
+                style={{
+                  padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 500,
+                  background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)",
+                  color: "#a78bfa", cursor: "pointer", transition: "all 0.2s",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(139,92,246,0.2)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(139,92,246,0.1)"; }}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Input */}
-      <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
-        <input
-          className="fire-input"
-          placeholder="Ask about BOQ, calculations, fire standards..."
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
-          disabled={sendMutation.isPending}
-          style={{ flex: 1 }}
-        />
+      {/* ── Input Area ── */}
+      <div style={{
+        padding: "12px 14px",
+        borderTop: "1px solid rgba(139,92,246,0.12)",
+        background: "rgba(0,0,0,0.15)",
+        flexShrink: 0,
+        display: "flex",
+        gap: 10,
+        alignItems: "flex-end",
+      }}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <textarea
+            ref={inputRef}
+            className="fire-input"
+            placeholder="Ask about BOQ, fire standards, calculations..."
+            value={input}
+            onChange={e => {
+              setInput(e.target.value);
+              // Auto-resize
+              e.target.style.height = "auto";
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+            }}
+            onKeyDown={handleKeyDown}
+            disabled={sendMutation.isPending}
+            rows={1}
+            style={{
+              width: "100%",
+              resize: "none",
+              overflow: "hidden",
+              minHeight: 42,
+              maxHeight: 120,
+              lineHeight: "1.5",
+              paddingTop: 10,
+              paddingBottom: 10,
+              fontFamily: "inherit",
+              fontSize: 14,
+              borderRadius: 12,
+            }}
+          />
+        </div>
         <button
           className="btn-primary"
           onClick={() => handleSend()}
           disabled={!input.trim() || sendMutation.isPending}
-          style={{ padding: "10px 16px" }}
+          style={{
+            padding: "11px 16px",
+            borderRadius: 12,
+            flexShrink: 0,
+            alignSelf: "flex-end",
+          }}
+          title="Send message (Enter)"
         >
           {sendMutation.isPending
-            ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
-            : <Send size={16} />
+            ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
+            : <Send size={18} />
           }
         </button>
       </div>
 
       <style>{`
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes pulse { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:0.6; transform:scale(1.1)} }
         @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
       `}</style>
